@@ -19,25 +19,18 @@ library(ggpubr)
 setwd("~/Senior Project")
 ```
 
-```{r}
-names(calibration_data)
-```
-```{r}
-View(collection_data$treatment)
-```
 
 
-##Thermocouple calibration
 
 ```{r}
 calibration_data <- read.csv("Thermocouple calibration data.csv", header = TRUE)
 thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
 collection_data <- read.csv("Collection Data.csv", header = TRUE)
-
+aquaflux_data <- read.csv("AquaFluxData.csv", header = TRUE)
 
 ```
 
-
+##Thermocouple calibration
 ```{r}
 ggplot() +
    geom_point(data=calibration_data, 
@@ -52,8 +45,6 @@ ggplot() +
    
 ```
 
-##Calibrating Thermocouples
-
 ```{r}
 ##can be fitted to any of the thermocouples to visualize the calibration curve
 ggplot(calibration_data, #graphs thermocouple temp for lead E x reference thermometer temp
@@ -64,8 +55,6 @@ ggplot(calibration_data, #graphs thermocouple temp for lead E x reference thermo
       stat_regline_equation() #displays the regression line equation
 
 ```
-
-
 ##I have been trying for ages to automate this process instead of manually assembling calibration curves but for the life of me I can't seem to get it
 
 Thermocouple E
@@ -130,11 +119,6 @@ split_calibration_curves <- split.data.frame(calibration_curves, f=calibration_c
 
 ```
 
-```{r}
-print(calibration_curves)
-```
-
-
 
 ```{r}
    #applies calibration equation for E thermocouples
@@ -162,25 +146,10 @@ print(calibration_curves)
 
 
 
-
-determine which thermocouple was used for the specific lizard. Find that calibration curve for that specific thermocouple and apply it to that lizards thermocouple data
-
-
-
-
-
 ##CEWL Data
-```{r}
-aquaflux_data <- read.csv("AquaFluxData.csv", header = TRUE)
-
-```
-
-```{r}
-names(aquaflux)
-```
 
 
-##Raw Plot
+##Raw Plot of all data
 ```{r}
 ggplot(aquaflux_data) +
        aes(aquaflux_data$Time_sec, aquaflux_data$Flux_g.m2h, color = aquaflux_data$Treatment) +
@@ -188,8 +157,8 @@ ggplot(aquaflux_data) +
        theme_classic() +
        scale_color_manual(values = c(
           "Control" = "snow4","Cooling" = "steelblue3",  "Heating"="orange")) +
-       labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
-       scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
+       labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) 
+       #scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
 
 
        #geom_smooth( 
@@ -199,12 +168,9 @@ ggplot(aquaflux_data) +
       #alpha = number controls transparency
 ```
 
-
 ```{r}
 lizard_ID <- as.factor(aquaflux_data$ï..ID)
 ```
-
-
 
 
 ##Average CEWL
@@ -226,7 +192,6 @@ colnames(average_cewl) <- c('avg_cewl', 'Treatment')
 average_cewl <- tibble::rownames_to_column(average_cewl, "Lizard_ID")
 ```
 
-
 ```{r}
 ##average CEWL for each lizard
 ggplot() +
@@ -240,7 +205,6 @@ ggplot() +
         y= "CEWL (g/m^2hr)", 
         fill ="Treatment") 
 ```
-
 
 ```{r}
 ##boxplots to show average CEWL by treatment group after removing first 2 minutes of data to account for intake of ambient air
