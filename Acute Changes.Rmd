@@ -15,11 +15,14 @@ install.packages("ggpubr")
 library(ggplot2)
 library(tidyr)
 library(ggpubr)
+library(dplyr)
 
 setwd("~/Senior Project")
 ```
 
 
+```{r}
+```
 
 
 ```{r}
@@ -157,8 +160,8 @@ ggplot(aquaflux_data) +
        theme_classic() +
        scale_color_manual(values = c(
           "Control" = "snow4","Cooling" = "steelblue3",  "Heating"="orange")) +
-       labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) 
-       #scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
+       labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
+       scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
 
 
        #geom_smooth( 
@@ -223,9 +226,9 @@ ggplot() +
 
 ```{r}
 avg_cewl_aov <- aov(average_cewl$avg_cewl~average_cewl$Treatment)
+
 summary(avg_cewl_aov)
-```
-```{r}
+
 TukeyHSD(avg_cewl_aov)
 ```
 
@@ -235,3 +238,46 @@ TukeyHSD(avg_cewl_aov)
 ##Average Change in CEWL
 ##Change in CEWL = end pt CEWL - begining pt CEWL
 ##Avg Change in CEWL = Sum[change in CEWL for 1 treatment] / number of lizards in that treatment
+
+```{r}
+initial_pt <- subset(aquaflux_data, Time_sec>119.5 & Time_sec<120.5)
+final_pt <- subset(aquaflux_data, Time_sec>=900)
+
+
+initial_final_cewl <- data.frame(initial_pt$ï..ID,
+                                 initial_pt$Flux_g.m2h, 
+                                 final_pt$Flux_g.m2h, 
+                                 initial_pt$Treatment,
+                                 final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h)
+colnames(initial_final_cewl) <- c('Lizard ID', 
+                                  'Initial CEWL', 
+                                  'Final CEWL', 
+                                  'Treatment', 
+                                  'Change in CEWL')
+```
+
+
+```{r}
+##change in CEWL (final - initial CEWL) by treatment group
+ggplot() +
+   aes(x = initial_final_cewl$Treatment, 
+       y = initial_final_cewl$`Change in CEWL`, 
+       fill = initial_final_cewl$Treatment) +
+   geom_boxplot() +
+   theme_classic() +
+   scale_fill_manual(values = c("Control" = "snow4",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange"))  +
+   #scale_y_continuous(limits = c(0,40), breaks=seq(0,40, 5)) +
+   labs(x= "Treatment" , y= "Average Change in CEWL (g H2O/m^2hr)", fill ="Treatment") 
+```
+
+```{r}
+change_cewl_aov <- aov(initial_final_cewl$`Change in CEWL`~initial_final_cewl$Treatment)
+
+summary(change_cewl_aov)
+
+TukeyHSD(change_cewl_aov)
+```
+
+
