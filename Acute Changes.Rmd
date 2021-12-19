@@ -16,6 +16,7 @@ library(ggplot2)
 library(tidyr)
 library(ggpubr)
 library(dplyr)
+library(lme4)
 
 setwd("~/Senior Project")
 ```
@@ -158,9 +159,11 @@ ggplot(aquaflux_data) +
        aes(aquaflux_data$Time_sec, aquaflux_data$Flux_g.m2h, color = aquaflux_data$Treatment) +
        geom_point(size = 0.01) +
        theme_classic() +
-       scale_color_manual(values = c(
-          "Control" = "snow4","Cooling" = "steelblue3",  "Heating"="orange")) +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
        labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
+       scale_y_continuous(trans = "log10") + #transforms to log scale
        scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
 
 
@@ -173,6 +176,14 @@ ggplot(aquaflux_data) +
 
 ```{r}
 lizard_ID <- as.factor(aquaflux_data$ï..ID)
+```
+
+
+```{r}
+##Want a graph where all lines start at same y-intercept, maybe with risduals from a line at log = o
+
+
+
 ```
 
 
@@ -201,7 +212,7 @@ ggplot() +
    aes(average_cewl$Lizard_ID, average_cewl$avg_cewl, fill = average_cewl$Treatment) +
    geom_col() +
    theme_classic() +
-   scale_fill_manual(values = c("Control" = "snow4",
+   scale_fill_manual(values = c("Control" = "forestgreen",
                                  "Cooling" = "steelblue3",  
                                  "Heating"="orange")) +
    labs(x= "Lizrd ID" , 
@@ -217,7 +228,7 @@ ggplot() +
        fill = average_cewl$Treatment) +
    geom_boxplot() +
    theme_classic() +
-   scale_fill_manual(values = c("Control" = "snow4",
+   scale_fill_manual(values = c("Control" = "forestgreen",
                                 "Cooling" = "steelblue3",  
                                 "Heating"="orange"))  +
    scale_y_continuous(limits = c(0,40), breaks=seq(0,40, 5)) +
@@ -238,7 +249,6 @@ TukeyHSD(avg_cewl_aov)
 ##Average Change in CEWL
 ##Change in CEWL = end pt CEWL - begining pt CEWL
 ##Avg Change in CEWL = Sum[change in CEWL for 1 treatment] / number of lizards in that treatment
-
 ```{r}
 initial_pt <- subset(aquaflux_data, Time_sec>119.5 & Time_sec<120.5)
 final_pt <- subset(aquaflux_data, Time_sec>=900)
@@ -248,36 +258,215 @@ initial_final_cewl <- data.frame(initial_pt$ï..ID,
                                  initial_pt$Flux_g.m2h, 
                                  final_pt$Flux_g.m2h, 
                                  initial_pt$Treatment,
-                                 final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h)
+                                 final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h, #Abolsute change
+                                 ((final_pt$Flux_g.m2h -     #relative change
+                                    initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100) 
 colnames(initial_final_cewl) <- c('Lizard ID', 
                                   'Initial CEWL', 
                                   'Final CEWL', 
                                   'Treatment', 
-                                  'Change in CEWL')
+                                  'Absolute Change in CEWL', #Final - initial
+                                  'Relative Change in CEWL') #Final - initial / initial * 100
 ```
 
 
+
+
+
+
 ```{r}
-##change in CEWL (final - initial CEWL) by treatment group
+##change in CEWL (final - initial CEWL) by treatment group, based on first and last data points after removing first 2 minutes of data
 ggplot() +
    aes(x = initial_final_cewl$Treatment, 
-       y = initial_final_cewl$`Change in CEWL`, 
+       y = initial_final_cewl$`Absolute Change in CEWL`, 
        fill = initial_final_cewl$Treatment) +
    geom_boxplot() +
    theme_classic() +
-   scale_fill_manual(values = c("Control" = "snow4",
+   scale_fill_manual(values = c("Control" = "forestgreen",
                                 "Cooling" = "steelblue3",  
                                 "Heating"="orange"))  +
-   #scale_y_continuous(limits = c(0,40), breaks=seq(0,40, 5)) +
-   labs(x= "Treatment" , y= "Average Change in CEWL (g H2O/m^2hr)", fill ="Treatment") 
+   labs(x= "Treatment" , y= "Absolute Change in CEWL (g H2O/m^2hr)", fill ="Treatment") 
 ```
 
 ```{r}
-change_cewl_aov <- aov(initial_final_cewl$`Change in CEWL`~initial_final_cewl$Treatment)
+change_cewl_aov <- aov(initial_final_cewl$`Absolute Change in CEWL`~initial_final_cewl$Treatment)
 
 summary(change_cewl_aov)
 
 TukeyHSD(change_cewl_aov)
 ```
 
+```{r}
+##Relative change in CEWL (final - initial CEWL)/initial * 100 by treatment group, based on first and last data points after removing first 2 minutes of data
+ggplot() +
+   aes(x = initial_final_cewl$Treatment, 
+       y = initial_final_cewl$`Relative Change in CEWL`, 
+       fill = initial_final_cewl$Treatment) +
+   geom_boxplot() +
+   theme_classic() +
+   scale_fill_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange"))  +
+   labs(x= "Treatment" , y= "Relative Change in CEWL (%)", fill ="Treatment") 
+```
+
+```{r}
+change_cewl_aov <- aov(initial_final_cewl$`Relative Change in CEWL`~initial_final_cewl$Treatment)
+
+summary(change_cewl_aov)
+
+TukeyHSD(change_cewl_aov)
+```
+
+
+
+##Change in CEWL x Mass
+```{r}
+View(collection_data)
+```
+
+```{r}
+##Distribution of masseses for each treatment
+ggplot() +
+   aes( 
+       x = collection_data$mass_g,
+       fill = collection_data$treatment) + 
+   geom_histogram(position = "dodge", 
+                  binwidth = 1, 
+                  breaks = seq(7, 20, by = 1), 
+                  color = "black") +
+   theme_classic() +
+   scale_fill_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange")) + 
+   labs(x= "Mass (g)" , y= "Count", fill ="Treatment") +
+   scale_y_continuous(limits = c(0,4), breaks=seq(0,4, 1)) +
+   scale_x_continuous(breaks = seq(0, 20, by = 1))
+```
+
+```{r}
+##Change in CEWL with Mass
+ggplot() +
+   aes(x = collection_data$mass_g,
+       y = initial_final_cewl$`Change in CEWL`,
+       color = collection_data$treatment) + 
+   geom_point() +
+   geom_smooth(method = "lm", se=TRUE) +
+   theme_classic() +
+   scale_fill_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange")) + 
+   labs(x= "Mass (g)" , y= "Change in CEWL", color ="Treatment") 
+   #scale_y_continuous(limits = c(0,4), breaks=seq(0,4, 1)) +
+   #scale_x_continuous(breaks = seq(0, 20, by = 1))
+```
+
+
+```{r}
+##Distribution of SVL's for each treatment
+ggplot() +
+   aes(x = collection_data$treatment, 
+       y = collection_data$SVL_mm,
+       fill = collection_data$treatment) + 
+   geom_boxplot() +
+   theme_classic() +
+   scale_fill_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange"))  +
+   labs(x= "Treatment" , y= "SVL(mm)", fill ="Treatment") +
+    scale_y_continuous(limits = c(0,80), breaks=seq(0,80, 5))
+```
+
+```{r}
+##Change in CEWL with SVL
+ggplot() +
+   aes(x = collection_data$SVL_mm,
+       y = initial_final_cewl$`Change in CEWL`,
+       color = collection_data$treatment) + 
+   geom_point() +
+   geom_smooth(method = "lm", se=TRUE) +
+   theme_classic() +
+   scale_color_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange")) + 
+   labs(x= "SVL (mm)" , y= "Change in CEWL", color ="Treatment") 
+   #scale_y_continuous(limits = c(0,4), breaks=seq(0,4, 1)) +
+   #scale_x_continuous(breaks = seq(0, 20, by = 1))
+```
+
+
+
+##Mixed Linear Model
+##random effect: lizard ID
+##individual variation: temperature, SVL, mass, body condition, capture climate
+##Should I be using change in temperature??
+
+```{r}
+data.frame(thermocouple_05_10$Value_C_408, lizzy)
+```
+
+```{r}
+lizzy<- aquaflux_data$Flux_g.m2h[aquaflux_data$ï..ID=='408']
+```
+
+
+```{r}
+x = aquaflux_data$Flux_g.m2h #solving dilemma of different number of rows
+y = thermocouple_05_10$Value_C_408
+
+max.len = max(length(x), length(y))
+   x = c(x, rep(NA, max.len - length(x)))
+   y = c(y, rep(NA, max.len - length(y)))
+   
+```
+
+```{r}
+mixed.lmer <- lmer(initial_final_cewl$`Change in CEWL` ~ initial_final_cewl$Treatment)
+
+
+summary(mixed.lmer)
+```
+
+##a two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars (|) separating expressions for design matrices from grouping factors. Two vertical bars (||) can be used to specify multiple uncorrelated random effects for the same grouping variabl
+
+
+```{r}
+View(initial_final_cewl)
+```
+
+```{r}
+lmer()
+```
+
+```{r}
+View(final_pt)
+```
+
+
+```{r}
+initial_pt <- subset(aquaflux_data, Time_sec>119.5 & Time_sec<120.5)
+final_pt <- subset(aquaflux_data, Time_sec>=900)
+
+mml_data <- data.frame(initial_pt$ï..ID,
+                       collection_data$mass_g, 
+                       collection_data$SVL_mm,
+                       initial_pt$Treatment,
+                       (final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h), #Abolsute change
+                       (((final_pt$Flux_g.m2h -     #relative change
+                                 initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100 ), 
+                       final_pt$Temp - initial_pt$Temp)
+colnames(mml_data) <- c('Lizard ID', 
+                        'Mass (g)',
+                        'SVL (mm)',
+                        'Treatment', 
+                        'Absolute Change in CEWL', #Final - initial
+                        'Relative Change in CEWL', #Final - initial / initial * 100
+                        'Absolute Change in Temperature')
+```
+
+
+
+```{r}
+View(mml_data)
+```
 
