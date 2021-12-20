@@ -4,12 +4,6 @@ author: "Calvin Davis"
 date: "10/24/2021"
 output: word_document
 ---
-```{r}
-install.packages("tidyverse")
-install.packages("lme4")
-install.packages("ggpubr")
-
-```
 
 ```{r}
 library(ggplot2)
@@ -23,51 +17,29 @@ setwd("~/Senior Project")
 
 
 ```{r}
-```
-
-
-```{r}
 calibration_data <- read.csv("Thermocouple calibration data.csv", header = TRUE)
 thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
+thermocouple_data <- read.csv("Thermocouple Data", header = TRUE)
 collection_data <- read.csv("Collection Data.csv", header = TRUE)
 aquaflux_data <- read.csv("AquaFluxData.csv", header = TRUE)
 
 ```
 
-##Thermocouple calibration
-```{r}
-ggplot() +
-   geom_point(data=calibration_data, 
-         aes(x= calibration_data$ï..Place, y = calibration_data$reference_temp1), 
-         color = "black") +
-   geom_point(data=calibration_data, 
-         aes(x=calibration_data$ï..Place, y = calibration_data$Value_E), 
-         color = "blue") +
-   theme_classic() 
-  # scale_x_continuous(limits = c(50,150), breaks=seq(0,150, 10)) 
-   
-   
-```
 
-```{r}
-##can be fitted to any of the thermocouples to visualize the calibration curve
-ggplot(calibration_data, #graphs thermocouple temp for lead E x reference thermometer temp
-      aes(x = Value_C, y = reference_temp2)) +
-      geom_point() +
-      geom_smooth(method = "lm", se = TRUE) +
-      theme_classic() +
-      stat_regline_equation() #displays the regression line equation
 
-```
-##I have been trying for ages to automate this process instead of manually assembling calibration curves but for the life of me I can't seem to get it
 
+##Hi Savannah :) I will do my best to lay out what I have been struggling with:
+##The first challenge I have been struggling with is just the layout of the thermocouple data. More specifically, it is spread out across 5 different csv files in which I have had to manually identify/match which thermocouple was used and to what lizard it belongs to. The next challenge is that due to the nature of our methods, there is a different amount of temperature data for each lizard (varies by a few seconds on average) but implies that the data does not exactly align with the CEWL timeseries. Lastly, because my experience of writing my own functions in R is quite limited, I have been unsure as how to automate the process of applying calibration curves to the thermocouple data. More specifically, I would love a function that identifies which thermocouple was used, automatically apply the proper calibration equation, and then reformat the newly calibrated data so it properly aligns with the the CEWL data set and so far I am having a hard time even begining a function like this. All that being said, these above steps are things I find fairly easy to do in excel (which I know you said is not ideal) so I will now try to annotate further the above challenges with the actual data sets...
+
+
+
+##I first created calibration curves for each thermocouple via linear regressions of the reference temperature x thermocouple temperature data, and did that for each individual thermocouple (which in I realized I'm not sure is even the proper way to do this and is certainly not the most efficient)
 Thermocouple E
 ```{r}
 regression_e <- lm(calibration_data$reference_temp1~calibration_data$Value_E) #calculate regression curve
 coef(regression_e) #prints coeffiencts to manually make regression curve
 ```
 ## y =  1.011570x - 1.641703
-
 
 Thermocouple B
 ```{r}
@@ -112,6 +84,7 @@ coef(regression_c)
 ## y = 1.005188x - 1.550718     we decided not to use this thermocouple
 
 
+##I was then trying to figure out a way to automate the application of the above equations by creating a dataframe with the respective information and then somehow applying that but got completely lost
 ```{r}
 #data frame with of calibration curves
    yint <- c(1.641703, 1.671978, 1.852796, 1.618859, 1.621470, 1.700887, 1.550718)
@@ -119,34 +92,90 @@ coef(regression_c)
    couple <- c("E", "B", "H", "A", "D", "F", "C")
 
 calibration_curves <- data.frame(yint, slope, couple)
-split_calibration_curves <- split.data.frame(calibration_curves, f=calibration_curves$couple)
+#split_calibration_curves <- split.data.frame(calibration_curves, f=calibration_curves$couple)
 
 ```
-
 
 ```{r}
    #applies calibration equation for E thermocouples
-(calibration_curves$slope[1] * $___________$ - calibration_curves$yint[1]
+(calibration_curves$slope[1] * ___________ - calibration_curves$yint[1]
  
     #applies calibration equation for B thermocouples
-(calibration_curves$slope[2] * $___________$ - calibration_curves$yint[2]
+(calibration_curves$slope[2] * ___________ - calibration_curves$yint[2]
 
    #applies calibration equation for H thermocouples
-(calibration_curves$slope[3] * $___________$ - calibration_curves$yint[3]
+(calibration_curves$slope[3] * ___________ - calibration_curves$yint[3]
    
    #applies calibration equation for A thermocouples
-(calibration_curves$slope[4] * $___________$ - calibration_curves$yint[4]
+(calibration_curves$slope[4] * ___________ - calibration_curves$yint[4]
    
    #applies calibration equation for D thermocouples
-(calibration_curves$slope[5] * $___________$ - calibration_curves$yint[5]
+(calibration_curves$slope[5] * ___________ - calibration_curves$yint[5]
    
    #applies calibration equation for F thermocouples
-(calibration_curves$slope[6] * $___________$ - calibration_curves$yint[6]
+(calibration_curves$slope[6] * ___________ - calibration_curves$yint[6]
    
    #applies calibration equation for C thermocouples
-(calibration_curves$slope[7] * $___________$ - calibration_curves$yint[7]
+(calibration_curves$slope[7] * ___________ - calibration_curves$yint[7]
 
 ```
+
+
+
+
+##So instead I started thinking about appling the curves manually in excell... which I know I'm not supposed to do but like I said I got lost...
+
+```{r}
+##This is what the raw, unmodified thermocouple data looks like for each day: 'vertically oriented', unlabeled, and different amounts of time
+OG_05_10_thermocouple_data <- read.csv(
+   "Original Format 05-10-2021 Thermocouple data", header = true)
+View(OG_05_10_thermocouple_data)
+
+##I was then going to reformat the data into something where I can more easily discern which couple/lizard the data belongs to and then manually apply the calibration curve. As a side note the only way to identify which thermocouple was used is based on comparing chamber in/out or aquaflux data times. The result was Something like this:
+thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
+View(thermocouple_05_10)
+
+##I was then going to manually align/cut the calibrated thermocouple data so it fit with the CEWL data, so it would end up looking something like this:
+aquaflux_data <- read.csv("AquaFluxData.csv", header = TRUE)
+View(aquaflux_data)
+
+```
+
+
+##This process is obviously not efficient as I would have to do the above steps to each of the data collecttion days individually, which isn't something I mind doing, however I sense it is bad science practive so I would love a point in the write direction. Sorry if any of this wasn't clear either, but hopefully it can be a start
+
+
+
+
+
+##Thermocouple calibration: regression of reference temp x thermocouple temp
+```{r}
+ggplot() +
+   geom_point(data=calibration_data, 
+         aes(x= calibration_data$ï..Place, y = calibration_data$reference_temp1), 
+         color = "black") +
+   geom_point(data=calibration_data, 
+         aes(x=calibration_data$ï..Place, y = calibration_data$Value_E), 
+         color = "blue") +
+   theme_classic() 
+  # scale_x_continuous(limits = c(50,150), breaks=seq(0,150, 10)) 
+   
+   
+```
+
+```{r}
+##can be fitted to any of the thermocouples to visualize the calibration curve
+ggplot(calibration_data, #graphs thermocouple temp for lead E x reference thermometer temp
+      aes(x = Value_C, y = reference_temp2)) +
+      geom_point() +
+      geom_smooth(method = "lm", se = TRUE) +
+      theme_classic() +
+      stat_regline_equation() #displays the regression line equation
+
+```
+
+
+
 
 
 
@@ -156,16 +185,19 @@ split_calibration_curves <- split.data.frame(calibration_curves, f=calibration_c
 ##Raw Plot of all data
 ```{r}
 ggplot(aquaflux_data) +
-       aes(aquaflux_data$Time_sec, aquaflux_data$Flux_g.m2h, color = aquaflux_data$Treatment) +
+       aes(aquaflux_data$Time_sec, 
+           aquaflux_data$Flux_g.m2h, 
+           color = aquaflux_data$Treatment) +
        geom_point(size = 0.01) +
        theme_classic() +
        scale_color_manual(values = c("Control" = "forestgreen",
                                      "Cooling" = "steelblue3",  
                                      "Heating"="orange")) +
        labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
-       scale_y_continuous(trans = "log10") + #transforms to log scale
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
        scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
-
+      
+       
 
        #geom_smooth( 
            # aes(aquaflux$Time_sec, aquaflux$Flux_g.m2h, color = aquaflux$Treatment, method = "lm")) 
@@ -179,8 +211,10 @@ lizard_ID <- as.factor(aquaflux_data$ï..ID)
 ```
 
 
+
+
 ```{r}
-##Want a graph where all lines start at same y-intercept, maybe with risduals from a line at log = o
+##Want a graph where all lines start at same y-intercept, maybe with residuals from a line at log = _____? but am having a hard time with where to start
 
 
 
@@ -198,9 +232,9 @@ sub_id <- as.factor(subset_cewl$ï..ID)
 ```{r}
 #finding the average CEWL for each treatment
 average_cewl <- data.frame(
-                   tapply(subset_cewl$Flux_g.m2h, subset_cewl$ï..ID, mean), #average CEWL/ lizard
+                   tapply(subset_cewl$Flux_g.m2h, subset_cewl$ï..ID, mean), #average CEWL /                                                                                         lizard
                    collection_data$treatment # assigning lizards treatment
-   )
+    )
 
 colnames(average_cewl) <- c('avg_cewl', 'Treatment')
 average_cewl <- tibble::rownames_to_column(average_cewl, "Lizard_ID")
@@ -248,7 +282,6 @@ TukeyHSD(avg_cewl_aov)
 
 ##Average Change in CEWL
 ##Change in CEWL = end pt CEWL - begining pt CEWL
-##Avg Change in CEWL = Sum[change in CEWL for 1 treatment] / number of lizards in that treatment
 ```{r}
 initial_pt <- subset(aquaflux_data, Time_sec>119.5 & Time_sec<120.5)
 final_pt <- subset(aquaflux_data, Time_sec>=900)
@@ -258,7 +291,7 @@ initial_final_cewl <- data.frame(initial_pt$ï..ID,
                                  initial_pt$Flux_g.m2h, 
                                  final_pt$Flux_g.m2h, 
                                  initial_pt$Treatment,
-                                 final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h, #Abolsute change
+                                 final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h, #Abolsute                                                                                       change
                                  ((final_pt$Flux_g.m2h -     #relative change
                                     initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100) 
 colnames(initial_final_cewl) <- c('Lizard ID', 
@@ -269,13 +302,8 @@ colnames(initial_final_cewl) <- c('Lizard ID',
                                   'Relative Change in CEWL') #Final - initial / initial * 100
 ```
 
-
-
-
-
-
 ```{r}
-##change in CEWL (final - initial CEWL) by treatment group, based on first and last data points after removing first 2 minutes of data
+##absolute change in CEWL (final - initial CEWL) by treatment group, based on first and last data points after removing first 2 minutes of data
 ggplot() +
    aes(x = initial_final_cewl$Treatment, 
        y = initial_final_cewl$`Absolute Change in CEWL`, 
@@ -303,6 +331,7 @@ ggplot() +
        y = initial_final_cewl$`Relative Change in CEWL`, 
        fill = initial_final_cewl$Treatment) +
    geom_boxplot() +
+   geom_point() +
    theme_classic() +
    scale_fill_manual(values = c("Control" = "forestgreen",
                                 "Cooling" = "steelblue3",  
@@ -311,20 +340,15 @@ ggplot() +
 ```
 
 ```{r}
-change_cewl_aov <- aov(initial_final_cewl$`Relative Change in CEWL`~initial_final_cewl$Treatment)
+change_cewl_aov <- aov(
+               initial_final_cewl$`Relative Change in CEWL` ~ initial_final_cewl$Treatment)
 
 summary(change_cewl_aov)
 
 TukeyHSD(change_cewl_aov)
 ```
 
-
-
 ##Change in CEWL x Mass
-```{r}
-View(collection_data)
-```
-
 ```{r}
 ##Distribution of masseses for each treatment
 ggplot() +
@@ -348,7 +372,7 @@ ggplot() +
 ##Change in CEWL with Mass
 ggplot() +
    aes(x = collection_data$mass_g,
-       y = initial_final_cewl$`Change in CEWL`,
+       y = initial_final_cewl$`Relative Change in CEWL`,
        color = collection_data$treatment) + 
    geom_point() +
    geom_smooth(method = "lm", se=TRUE) +
@@ -360,7 +384,6 @@ ggplot() +
    #scale_y_continuous(limits = c(0,4), breaks=seq(0,4, 1)) +
    #scale_x_continuous(breaks = seq(0, 20, by = 1))
 ```
-
 
 ```{r}
 ##Distribution of SVL's for each treatment
@@ -381,7 +404,7 @@ ggplot() +
 ##Change in CEWL with SVL
 ggplot() +
    aes(x = collection_data$SVL_mm,
-       y = initial_final_cewl$`Change in CEWL`,
+       y = initial_final_cewl$`Relative Change in CEWL`,
        color = collection_data$treatment) + 
    geom_point() +
    geom_smooth(method = "lm", se=TRUE) +
@@ -398,49 +421,13 @@ ggplot() +
 
 ##Mixed Linear Model
 ##random effect: lizard ID
-##individual variation: temperature, SVL, mass, body condition, capture climate
+##individual variation: temperature, SVL, mass, body condition, capture climate, ambient temp/humidity(?)
 ##Should I be using change in temperature??
 
-```{r}
-data.frame(thermocouple_05_10$Value_C_408, lizzy)
-```
-
-```{r}
-lizzy<- aquaflux_data$Flux_g.m2h[aquaflux_data$ï..ID=='408']
-```
 
 
-```{r}
-x = aquaflux_data$Flux_g.m2h #solving dilemma of different number of rows
-y = thermocouple_05_10$Value_C_408
+##"a two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars (|) separating expressions for design matrices from grouping factors. Two vertical bars (||) can be used to specify multiple uncorrelated random effects for the same grouping variabl"
 
-max.len = max(length(x), length(y))
-   x = c(x, rep(NA, max.len - length(x)))
-   y = c(y, rep(NA, max.len - length(y)))
-   
-```
-
-```{r}
-mixed.lmer <- lmer(initial_final_cewl$`Change in CEWL` ~ initial_final_cewl$Treatment)
-
-
-summary(mixed.lmer)
-```
-
-##a two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars (|) separating expressions for design matrices from grouping factors. Two vertical bars (||) can be used to specify multiple uncorrelated random effects for the same grouping variabl
-
-
-```{r}
-View(initial_final_cewl)
-```
-
-```{r}
-lmer()
-```
-
-```{r}
-View(final_pt)
-```
 
 
 ```{r}
@@ -455,6 +442,7 @@ mml_data <- data.frame(initial_pt$ï..ID,
                        (((final_pt$Flux_g.m2h -     #relative change
                                  initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100 ), 
                        final_pt$Temp - initial_pt$Temp)
+
 colnames(mml_data) <- c('Lizard ID', 
                         'Mass (g)',
                         'SVL (mm)',
@@ -463,6 +451,7 @@ colnames(mml_data) <- c('Lizard ID',
                         'Relative Change in CEWL', #Final - initial / initial * 100
                         'Absolute Change in Temperature')
 ```
+
 
 
 
