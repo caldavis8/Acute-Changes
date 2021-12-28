@@ -38,8 +38,3 @@ date,time_capture,sock,individual_ID,treatment,mass_g,SVL_mm,time_in_chamber,tim
 19/10/2021,11:33,A,437,Control,11.4,67,,,H,T2,C,T1,lateish start
 19/10/2021,10:20,M1,438,Control,11.7,68,,,G,T2,B,T1,
 19/10/2021,11:58,X1,439,Heating,8.7,60,15:25,16:28,H,T2,C,T1,started temp ~1min late
-,,,,,,,,,,,,,
-,,,,,,,,,,,,,
-,,,,13,,,,,,,,,
-,,,,14,,,,,,,,,
-,,,,12,,,,,,,,,

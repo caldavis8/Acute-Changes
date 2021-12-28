@@ -17,10 +17,10 @@ setwd("~/Senior Project")
 
 
 ```{r}
-calibration_data <- read.csv("Thermocouple calibration data.csv", header = TRUE)
-thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
-thermocouple_data <- read.csv("Thermocouple Data", header = TRUE)
-collection_data <- read.csv("Collection Data.csv", header = TRUE)
+#calibration_data <- read.csv("Thermocouple calibration data.csv", header = TRUE)
+#thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
+#thermocouple_data <- read.csv("Thermocouple Data.csv", header = TRUE)
+#collection_data <- read.csv("Collection Data.csv", header = TRUE)
 aquaflux_data <- read.csv("AquaFluxData.csv", header = TRUE)
 
 ```
@@ -81,7 +81,7 @@ Thermocouple C
 regression_c <- lm(calibration_data$reference_temp2~calibration_data$Value_C)
 coef(regression_c)
 ```
-## y = 1.005188x - 1.550718     we decided not to use this thermocouple
+## y = 1.005188x - 1.550718     
 
 
 ##I was then trying to figure out a way to automate the application of the above equations by creating a dataframe with the respective information and then somehow applying that but got completely lost
@@ -152,11 +152,13 @@ View(aquaflux_data)
 ```{r}
 ggplot() +
    geom_point(data=calibration_data, 
-         aes(x= calibration_data$ï..Place, y = calibration_data$reference_temp1), 
-         color = "black") +
+         aes(x= calibration_data$ï..Place, 
+             y = calibration_data$reference_temp1), 
+             color = "black") +
    geom_point(data=calibration_data, 
-         aes(x=calibration_data$ï..Place, y = calibration_data$Value_E), 
-         color = "blue") +
+         aes(x=calibration_data$ï..Place, 
+             y = calibration_data$Value_E), 
+             color = "blue") +
    theme_classic() 
   # scale_x_continuous(limits = c(50,150), breaks=seq(0,150, 10)) 
    
@@ -230,11 +232,16 @@ sub_id <- as.factor(subset_cewl$ï..ID)
 ```
 
 ```{r}
+View(collection_data)
+```
+
+
+```{r}
 #finding the average CEWL for each treatment
 average_cewl <- data.frame(
                    tapply(subset_cewl$Flux_g.m2h, subset_cewl$ï..ID, mean), #average CEWL /                                                                                         lizard
                    collection_data$treatment # assigning lizards treatment
-    )
+)
 
 colnames(average_cewl) <- c('avg_cewl', 'Treatment')
 average_cewl <- tibble::rownames_to_column(average_cewl, "Lizard_ID")
@@ -276,7 +283,6 @@ summary(avg_cewl_aov)
 
 TukeyHSD(avg_cewl_aov)
 ```
-
 
 
 
@@ -418,15 +424,52 @@ ggplot() +
 ```
 
 
-
-##Mixed Linear Model
-##random effect: lizard ID
-##individual variation: temperature, SVL, mass, body condition, capture climate, ambient temp/humidity(?)
-##Should I be using change in temperature??
+```{r}
+names(aquaflux_data)
+```
 
 
 
-##"a two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars (|) separating expressions for design matrices from grouping factors. Two vertical bars (||) can be used to specify multiple uncorrelated random effects for the same grouping variabl"
+##CEWL x TEMP
+```{r}
+##With first 2 minutes
+ggplot(aquaflux_data) +
+       aes(aquaflux_data$Cloacal_Temp_C, 
+           aquaflux_data$Flux_g.m2h, 
+           color = aquaflux_data$Treatment) +
+       geom_point(size = 0.01) +
+       theme_classic() +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
+       labs(x= "Temp (C)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
+       scale_x_continuous(limits = c(0,38), breaks=seq(0,40, 5)) 
+```
+
+
+```{r}
+##without first 2 minutes
+ggplot() +
+       aes(subset_cewl$Cloacal_Temp_C, 
+           subset_cewl$Flux_g.m2h, 
+           color = subset_cewl$Treatment) +
+       geom_point(size = 0.01) +
+       theme_classic() +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
+       labs(x= "Temp (C)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
+       scale_x_continuous(limits = c(0,38), breaks=seq(0,40, 5)) 
+```
+
+
+
+
+
+
+
 
 
 
@@ -455,7 +498,147 @@ colnames(mml_data) <- c('Lizard ID',
 
 
 
+##Mixed Linear Model
+##random effect: lizard ID
+##individual variation: temperature, (SVL, mass, body condition), capture climate, ambient temp/humidity(?)
+##Should I be using change in temperature??
+
+
+
+##"a two-sided linear formula object describing both the fixed-effects and random-effects part of the model, with the response on the left of a ~ operator and the terms, separated by + operators, on the right. Random-effects terms are distinguished by vertical bars (|) separating expressions for design matrices from grouping factors. Two vertical bars (||) can be used to specify multiple uncorrelated random effects for the same grouping variabl"
+
+
 ```{r}
-View(mml_data)
+ggplot(aquaflux_data) +
+       aes(aquaflux_data$Time_sec, 
+           aquaflux_data$Flux_g.m2h, 
+           color = aquaflux_data$Treatment) +
+       geom_point(size = 0.01) +
+       theme_classic() +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
+       labs(x= "Time (sec)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) +
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
+       scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) 
 ```
 
+
+```{r}
+ggplot() +
+       aes(subset_cewl$Time_sec, 
+           subset_cewl$Flux_g.m2h, 
+           color = subset_cewl$Treatment) +
+       geom_point(size = 0.01) +
+       theme_classic() +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
+       labs(x= "Temp (C)" , y= "Flux (g/m^2hr)", color ="Treatment", se = FALSE) 
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
+      # scale_x_continuous(limits = c(0,38), breaks=seq(0,40, 5)) 
+```
+
+
+```{r}
+View(collection_data)
+```
+
+
+```{r}
+```
+
+
+```{r}
+x <- collection_data$individual_ID
+print(x)
+```
+
+```{r}
+##need to find a way to incorporate collection data into aquaflux/subset_cewl data. 
+##I want to create a function/loop which identifies the lizard ID in the collection data dataset and pull the svl & mass data from that dataset to then apply it to tge aquaflux/subset_cewl dataset so its in 'vertical' fornat so its easier to work with for the mixed model
+
+
+for (id in 401:439) {
+   
+   x <- collection_data[id,]
+   
+   print(x)
+   
+}
+
+
+```
+
+```{r}
+for (id in 401:439) {
+   
+   if(x == subset_cewl$ï..ID) {}
+}
+```
+
+
+
+```{r}
+if(collection_data$individual_ID == subset_cewl$ï..ID) {
+   
+   subset_cewl$mass <- collection_data$mass_g
+}
+```
+
+
+
+
+
+
+```{r}
+cewl_basic <- lm(subset_cewl$Flux_g.m2h ~ subset_cewl$Time_sec)
+summary(cewl_basic)
+```
+
+```{r}
+plot(cewl_basic, which = 1)
+```
+```{r}
+plot(cewl_basic, which = 2)
+```
+
+
+```{r}
+cewl_treatment <- lm(subset_cewl$Flux_g.m2h ~ subset_cewl$Time_sec + subset_cewl$Treatment)
+summary(cewl_treatment)
+```
+
+```{r}
+library(lme4)
+```
+```{r}
+names(subset_cewl)
+```
+
+
+```{r}
+##fixed effects: time and treatment and cloacal temp(?), anbient humidity/temp?
+##random effects: Lizard ID nested in Day, 
+
+
+
+cewl_mml <- lmer(data = subset_cewl,
+                 Flux_g.m2h ~ Time_sec + Treatment + Amb_temp_C + Amb_humidity_. + 
+                 Cloacal_Temp_C +
+                 (1|ï..ID) )
+summary(cewl_mml)
+```
+
+
+```{r}
+drop1(cewl_mml)
+```
+
+
+```{r}
+plot(cewl_mml, which = 1)
+```
+```{r}
+plot(cewl_mml, which = 2)
+```
