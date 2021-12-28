@@ -354,21 +354,6 @@ summary(change_cewl_aov)
 TukeyHSD(change_cewl_aov)
 ```
 
-
-
-
-
-
-##For the life of me I can't come up with a way to create a line graph where all of the CEWL x time (or temp) lines would start at the same relative Y-intercept like we had initiially planned to to. I have been searching stack overflow for days and can't come up with a way to shift all lines to one relative position!!!!!!!!!!!! 
-
-
-
-
-
-
-
-
-
 ##Change in CEWL x Mass
 ```{r}
 ##Distribution of masseses for each treatment
@@ -561,10 +546,6 @@ View(collection_data)
 
 
 ```{r}
-```
-
-
-```{r}
 x <- collection_data$individual_ID
 print(x)
 ```
@@ -639,7 +620,12 @@ names(subset_cewl)
 
 
 cewl_mml <- lmer(data = subset_cewl,
-                 Flux_g.m2h ~ Time_sec + Treatment + Amb_temp_C + Amb_humidity_. + 
+                 Flux_g.m2h ~ Time_sec + 
+                 Treatment + 
+                 Amb_temp_C + 
+                 Amb_humidity_. + 
+                 Mass_g + 
+                 SVL_mm
                  Cloacal_Temp_C +
                  (1|ï..ID) )
 summary(cewl_mml)
