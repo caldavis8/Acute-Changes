@@ -354,6 +354,21 @@ summary(change_cewl_aov)
 TukeyHSD(change_cewl_aov)
 ```
 
+
+
+
+
+
+##For the life of me I can't come up with a way to create a line graph where all of the CEWL x time (or temp) lines would start at the same relative Y-intercept like we had initiially planned to to. I have been searching stack overflow for days and can't come up with a way to shift all lines to one relative position!!!!!!!!!!!! 
+
+
+
+
+
+
+
+
+
 ##Change in CEWL x Mass
 ```{r}
 ##Distribution of masseses for each treatment
