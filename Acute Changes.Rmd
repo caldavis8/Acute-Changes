@@ -17,10 +17,10 @@ setwd("~/Senior Project")
 
 
 ```{r}
-#calibration_data <- read.csv("Thermocouple calibration data.csv", header = TRUE)
-#thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
-#thermocouple_data <- read.csv("Thermocouple Data.csv", header = TRUE)
-#collection_data <- read.csv("Collection Data.csv", header = TRUE)
+calibration_data <- read.csv("Thermocouple calibration data.csv", header = TRUE)
+thermocouple_05_10 <- read.csv("05-10-2021 Thermocouple data.csv", header = TRUE)
+thermocouple_data <- read.csv("Thermocouple Data.csv", header = TRUE)
+collection_data <- read.csv("Collection Data.csv", header = TRUE)
 aquaflux_data <- read.csv("AquaFluxData.csv", header = TRUE)
 
 ```
@@ -223,6 +223,7 @@ lizard_ID <- as.factor(aquaflux_data$ï..ID)
 ```
 
 
+
 ##Average CEWL
 ```{r}
 subset_cewl <- aquaflux_data[ which( aquaflux_data$Flux_g.m2h >0 & aquaflux_data$Time_sec >120),]
@@ -354,6 +355,14 @@ summary(change_cewl_aov)
 TukeyHSD(change_cewl_aov)
 ```
 
+
+
+
+##For the life of me I can't seem to find any resources to help make a line graph where all CEWL measurements start at the same relative point like we discussed. Any advice here would be greatly apprecieated
+
+
+
+
 ##Change in CEWL x Mass
 ```{r}
 ##Distribution of masseses for each treatment
@@ -466,34 +475,45 @@ ggplot() +
 
 
 
-
-
-
-
-
+##Heating/Cooling Rates
+##subset by lizard ID and take absolute value for the difference between min and max temp 
 
 
 ```{r}
-initial_pt <- subset(aquaflux_data, Time_sec>119.5 & Time_sec<120.5)
-final_pt <- subset(aquaflux_data, Time_sec>=900)
+lows <- tapply(subset_cewl$Cloacal_Temp_C, subset_cewl$ï..ID, min, na.rm = TRUE)
+highs <- tapply(subset_cewl$Cloacal_Temp_C, subset_cewl$ï..ID, max, na.rm = TRUE)
+temp_change <- (highs - lows ) / 15
 
-mml_data <- data.frame(initial_pt$ï..ID,
-                       collection_data$mass_g, 
-                       collection_data$SVL_mm,
-                       initial_pt$Treatment,
-                       (final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h), #Abolsute change
-                       (((final_pt$Flux_g.m2h -     #relative change
-                                 initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100 ), 
-                       final_pt$Temp - initial_pt$Temp)
+temp_rate_values <- data.frame(collection_data$individual_ID,
+                               collection_data$treatment,
+                               lows, highs, temp_change)
 
-colnames(mml_data) <- c('Lizard ID', 
-                        'Mass (g)',
-                        'SVL (mm)',
-                        'Treatment', 
-                        'Absolute Change in CEWL', #Final - initial
-                        'Relative Change in CEWL', #Final - initial / initial * 100
-                        'Absolute Change in Temperature')
+colnames(temp_rate_values) <- c('Lizard ID', 
+                                  'Treatment', 
+                                  'Minimum Temperature (C)', 
+                                  'Maximum Temperature (C)',
+                                  'Temp Rate of Change (C/min)')
 ```
+
+```{r}
+View(temp_rate_values)
+```
+
+```{r}
+ggplot() +
+       aes(temp_rate_values$Treatment, 
+           temp_rate_values$`Temp Rate of Change (C/min)`, 
+           fill = temp_rate_values$Treatment) +
+       geom_boxplot() +
+       theme_classic() +
+       scale_fill_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange")) + 
+   labs(x= "Mass (g)" , y= "Change in CEWL", color ="Treatment") 
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
+       #scale_x_continuous(limits = c(0,38), breaks=seq(0,40, 5))
+```
+
 
 
 
@@ -643,3 +663,9 @@ plot(cewl_mml, which = 1)
 ```{r}
 plot(cewl_mml, which = 2)
 ```
+
+
+```{r}
+strsplit(version[['version.string']], ' ')[[1]][3]
+```
+
