@@ -178,6 +178,151 @@ ggplot(calibration_data, #graphs thermocouple temp for lead E x reference thermo
 
 
 
+```{r}
+initial_pt <- subset(aquaflux_data, Time_sec>119.5 & Time_sec<120.5)
+final_pt <- subset(aquaflux_data, Time_sec>=900)
+
+
+initial_final_cewl <- data.frame(initial_pt$ï..ID,
+                                 initial_pt$Flux_g.m2h, 
+                                 final_pt$Flux_g.m2h, 
+                                 initial_pt$Treatment,
+                                 final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h, #Abolsute                                                                                       change
+                                 ((final_pt$Flux_g.m2h -     #relative change
+                                    initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100) 
+
+
+colnames(initial_final_cewl) <- c('Lizard ID', 
+                                  'Initial CEWL', 
+                                  'Final CEWL', 
+                                  'Treatment', 
+                                  'Absolute Change in CEWL', #Final - initial
+                                  'Relative Change in CEWL') #Final - initial / initial * 100
+```
+
+
+
+
+##Heating/Cooling Rates
+##subset by lizard ID and take absolute value for the difference between min and max temp 
+
+```{r}
+##Creating temperature change data using minimums and maximums but...
+
+lows <- tapply(subset_cewl$Cloacal_Temp_C, subset_cewl$ï..ID, min, na.rm = TRUE)
+highs <- tapply(subset_cewl$Cloacal_Temp_C, subset_cewl$ï..ID, max, na.rm = TRUE)
+temp_change <- (highs - lows ) / 13 #this is using the susbetted data (-2min) so its really only over a 13min time scale
+
+temp_rate_values <- data.frame(collection_data$individual_ID,
+                               collection_data$treatment,
+                               lows, highs, temp_change)
+
+colnames(temp_rate_values) <- c('Lizard ID', 
+                                  'Treatment', 
+                                  'Minimum Temperature (C)', 
+                                  'Maximum Temperature (C)',
+                                  'Temp Rate of Change (C/min)')
+
+
+##Need to come up with a better way to do this (final - initiial) becuase current method doesn't show increase/decrease in temperature and is completely wrong for control values
+
+
+
+```
+
+```{r}
+ggplot() +
+       aes(temp_rate_values$Treatment, 
+           temp_rate_values$`Temp Rate of Change (C/min)`, 
+           fill = temp_rate_values$Treatment) +
+       geom_boxplot() +
+       theme_classic() +
+       scale_fill_manual(values = c("Control" = "forestgreen",
+                                "Cooling" = "steelblue3",  
+                                "Heating"="orange")) + 
+   labs(x= "Mass (g)" , y= "Change in CEWL", color ="Treatment") 
+      # scale_y_continuous(trans = "log10") + #transforms to log scale
+       #scale_x_continuous(limits = c(0,38), breaks=seq(0,40, 5))
+```
+
+
+
+##Would it be better to show an average heating/cooling rate in terms of a linear regression?
+```{r}
+##graphing temperature change over the entire 15 minute period
+
+ggplot(aquaflux_data) +
+       aes(aquaflux_data$Time_sec, 
+           aquaflux_data$Cloacal_Temp_C, 
+           color = aquaflux_data$Treatment) +
+       geom_point(size = 0.01) +
+       geom_smooth(method = "lm", se = TRUE, aes(color = aquaflux_data$Treatment), na.rm = TRUE) +
+       theme_classic() +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
+       labs(x= "Time (sec)" , y= "Temperature", color ="Treatment", se = FALSE) +
+       scale_y_continuous(trans = "log10")  #transforms to log scale
+       #scale_y_continuous(limits = c(0,40), breaks=seq(0,40, 5))  #transforms to log scale
+       #scale_x_continuous(limits = c(120,950), breaks=seq(0,950, 50)) ```
+
+```
+
+```{r}
+temp_rates_reg <- lm(aquaflux_data$Cloacal_Temp_C ~ aquaflux_data$Time_sec + aquaflux_data$Treatment)
+
+summary(temp_rates_reg)
+```
+
+```{r}
+coef(temp_rates_reg)
+```
+
+
+
+```{r}
+##Creating temp data using the initial & final temp point data but...
+
+change_in_temp <- (final_pt$Cloacal_Temp_C - initial_pt$Cloacal_Temp_C)
+
+
+temp_data <- data.frame(initial_pt$ï..ID, 
+                        initial_pt$Treatment,
+                        initial_pt$Cloacal_Temp_C,
+                        final_pt$Cloacal_Temp_C,
+                        change_in_temp, 
+                        change_in_temp/13)
+
+colnames(temp_data) <- c('Lizard ID',
+                         'Treatment',
+                         'Initial Temp (C)',
+                         'Final Temp (C)',
+                         'Change in Temp',
+                         'Rate of Temp Change (C/min)')
+
+##Missing 4 values: 416 & 418 that lack calibration data, 428 & 429 are missing one or both of initial/final temp points due to starting thermocouple lack and data shortage
+
+```
+
+
+```{r}
+ggplot(temp_data) +
+       aes(temp_data$`Rate of Temp Change (C/min)`,
+           initial_final_cewl$`Relative Change in CEWL`,
+           color = temp_data$Treatment) +
+       geom_point(size = 3) +
+       theme_pubclean() +
+       scale_color_manual(values = c("Control" = "forestgreen",
+                                     "Cooling" = "steelblue3",  
+                                     "Heating"="orange")) +
+       labs(x= "Rate of Temperature Change (C/min)", 
+            y= "Relative Change in CEWL (%)", 
+            color ="Treatment", se = FALSE) +
+       scale_x_continuous(limits = c(-2,2), breaks=seq(-2,2, 0.5))
+
+       
+```
+
 
 
 
@@ -231,11 +376,6 @@ subset_cewl <- aquaflux_data[ which( aquaflux_data$Flux_g.m2h >0 & aquaflux_data
 sub_id <- as.factor(subset_cewl$ï..ID)
 
 ```
-
-```{r}
-View(collection_data)
-```
-
 
 ```{r}
 #finding the average CEWL for each treatment
@@ -301,6 +441,8 @@ initial_final_cewl <- data.frame(initial_pt$ï..ID,
                                  final_pt$Flux_g.m2h - initial_pt$Flux_g.m2h, #Abolsute                                                                                       change
                                  ((final_pt$Flux_g.m2h -     #relative change
                                     initial_pt$Flux_g.m2h)/initial_pt$Flux_g.m2h)*100) 
+
+
 colnames(initial_final_cewl) <- c('Lizard ID', 
                                   'Initial CEWL', 
                                   'Final CEWL', 
@@ -475,44 +617,11 @@ ggplot() +
 
 
 
-##Heating/Cooling Rates
-##subset by lizard ID and take absolute value for the difference between min and max temp 
 
 
-```{r}
-lows <- tapply(subset_cewl$Cloacal_Temp_C, subset_cewl$ï..ID, min, na.rm = TRUE)
-highs <- tapply(subset_cewl$Cloacal_Temp_C, subset_cewl$ï..ID, max, na.rm = TRUE)
-temp_change <- (highs - lows ) / 15
 
-temp_rate_values <- data.frame(collection_data$individual_ID,
-                               collection_data$treatment,
-                               lows, highs, temp_change)
 
-colnames(temp_rate_values) <- c('Lizard ID', 
-                                  'Treatment', 
-                                  'Minimum Temperature (C)', 
-                                  'Maximum Temperature (C)',
-                                  'Temp Rate of Change (C/min)')
-```
 
-```{r}
-View(temp_rate_values)
-```
-
-```{r}
-ggplot() +
-       aes(temp_rate_values$Treatment, 
-           temp_rate_values$`Temp Rate of Change (C/min)`, 
-           fill = temp_rate_values$Treatment) +
-       geom_boxplot() +
-       theme_classic() +
-       scale_fill_manual(values = c("Control" = "forestgreen",
-                                "Cooling" = "steelblue3",  
-                                "Heating"="orange")) + 
-   labs(x= "Mass (g)" , y= "Change in CEWL", color ="Treatment") 
-      # scale_y_continuous(trans = "log10") + #transforms to log scale
-       #scale_x_continuous(limits = c(0,38), breaks=seq(0,40, 5))
-```
 
 
 
