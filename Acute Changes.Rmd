@@ -307,7 +307,7 @@ colnames(temp_data) <- c('Lizard ID',
 
 ```{r}
 ggplot(temp_data) +
-       aes(temp_data$`Rate of Temp Change (C/min)`,
+       aes(temp_data$`Change in Temp`,
            initial_final_cewl$`Relative Change in CEWL`,
            color = temp_data$Treatment) +
        geom_point(size = 3) +
@@ -315,10 +315,10 @@ ggplot(temp_data) +
        scale_color_manual(values = c("Control" = "forestgreen",
                                      "Cooling" = "steelblue3",  
                                      "Heating"="orange")) +
-       labs(x= "Rate of Temperature Change (C/min)", 
+       labs(x= "Change in Temp", 
             y= "Relative Change in CEWL (%)", 
-            color ="Treatment", se = FALSE) +
-       scale_x_continuous(limits = c(-2,2), breaks=seq(-2,2, 0.5))
+            color ="Treatment", se = FALSE) 
+     #  scale_x_continuous(limits = c(-2,2), breaks=seq(-2,2, 0.5))
 
        
 ```
@@ -774,7 +774,4 @@ plot(cewl_mml, which = 2)
 ```
 
 
-```{r}
-strsplit(version[['version.string']], ' ')[[1]][3]
-```
 
